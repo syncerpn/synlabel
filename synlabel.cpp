@@ -20,12 +20,6 @@ typedef enum {
 
 static int N_DRAW_STATE = DRAW_STATE_END - DRAW_STATE_BEGIN - 1;
 
-// typedef enum {
-//     BOX_EDIT_MODE_BEGIN = -1, LOCK = 0, XY, WH, BOX_EDIT_MODE_END
-// } BOX_EDIT_MODE;
-
-// static int N_BOX_EDIT_MODE = BOX_EDIT_MODE_END - BOX_EDIT_MODE_BEGIN - 1;
-
 typedef struct {
 	float l;
 	float t;
@@ -382,10 +376,10 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 
 			preload_gt_boxes[count].class_id = id;
 			preload_gt_boxes[count].difficult = diff;
-			preload_gt_boxes[count].l = (x - w / 2) * im_w;
-			preload_gt_boxes[count].r = (x + w / 2) * im_w;
-			preload_gt_boxes[count].t = (y - h / 2) * im_h;
-			preload_gt_boxes[count].b = (y + h / 2) * im_h;
+			preload_gt_boxes[count].l = (x - w / 2) * im_w + 0.5;
+			preload_gt_boxes[count].r = (x + w / 2) * im_w - 0.5;
+			preload_gt_boxes[count].t = (y - h / 2) * im_h + 0.5;
+			preload_gt_boxes[count].b = (y + h / 2) * im_h - 0.5;
 			++count;
 		}
 		preload_n_box = count;
@@ -433,6 +427,7 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 	//main window
 	int border_w = 20;
 	sf::RenderWindow show_window(sf::VideoMode(im_w + border_w + class_name_w, im_h + 20), "show", sf::Style::Close);
+	show_window.setFramerateLimit(60);
 	show_window.setPosition(sf::Vector2i(0, 0));
 
 	sf::RectangleShape border;
@@ -470,7 +465,10 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 
 	int draw_state = CLEAR;
 	int box_edit_mode = 5;
-	float saved_l, saved_r, saved_t, saved_b;
+	float saved_l = 0;
+	float saved_r = 0;
+	float saved_t = 0;
+	float saved_b = 0;
 	//mask buffer
 	sf::RectangleShape mask;
 	mask.setFillColor(sf::Color(0, 0, 0, 184));
@@ -566,7 +564,7 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 						box_3 = box_1;
 						box_4 = box_1;
 					}
-					if (event.key.code == sf::Keyboard::Enter) {
+					if (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Space) {
 						if (draw_state == BOX_READY) {
 							float max_x = box_1.x > box_4.x ? box_1.x : box_4.x;
 							float min_x = box_1.x < box_4.x ? box_1.x : box_4.x;
@@ -639,7 +637,7 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 								float y = (gt_boxes[i].t + gt_boxes[i].b) / (2 * im_h);
 								float w = (gt_boxes[i].r - gt_boxes[i].l + 1) / im_w;
 								float h = (gt_boxes[i].b - gt_boxes[i].t + 1) / im_h;
-								fprintf(file, "%d %.6f %.6f %.6f %.6f\n", gt_boxes[i].class_id, x, y, w, h);
+								fprintf(file, "%d %.16f %.16f %.16f %.16f\n", gt_boxes[i].class_id, x, y, w, h);
 								fprintf(file_diff, "%d\n", gt_boxes[i].difficult);
 							}
 						}
@@ -739,7 +737,7 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 									float y = (gt_boxes[i].t + gt_boxes[i].b) / (2 * im_h);
 									float w = (gt_boxes[i].r - gt_boxes[i].l + 1) / im_w;
 									float h = (gt_boxes[i].b - gt_boxes[i].t + 1) / im_h;
-									fprintf(file, "%d %.6f %.6f %.6f %.6f\n", gt_boxes[i].class_id, x, y, w, h);
+									fprintf(file, "%d %.16f %.16f %.16f %.16f\n", gt_boxes[i].class_id, x, y, w, h);
 									fprintf(file_diff, "%d\n", gt_boxes[i].difficult);
 								}
 							}
@@ -830,28 +828,28 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 					}
 					if (event.type == sf::Event::KeyPressed) {
 						if (box_edit_mode == 5) {
-							if (event.key.code == sf::Keyboard::Numpad1) {
+							if (event.key.code == sf::Keyboard::Numpad1 || event.key.code == sf::Keyboard::Z) {
 								saved_l = gt_boxes[current_highlight].l;
 								saved_r = gt_boxes[current_highlight].r;
 								saved_t = gt_boxes[current_highlight].t;
 								saved_b = gt_boxes[current_highlight].b;
 								box_edit_mode = 1;
 							}
-							if (event.key.code == sf::Keyboard::Numpad3) {
+							if (event.key.code == sf::Keyboard::Numpad3 || event.key.code == sf::Keyboard::C) {
 								saved_l = gt_boxes[current_highlight].l;
 								saved_r = gt_boxes[current_highlight].r;
 								saved_t = gt_boxes[current_highlight].t;
 								saved_b = gt_boxes[current_highlight].b;
 								box_edit_mode = 3;
 							}
-							if (event.key.code == sf::Keyboard::Numpad7) {
+							if (event.key.code == sf::Keyboard::Numpad7 || event.key.code == sf::Keyboard::Q) {
 								saved_l = gt_boxes[current_highlight].l;
 								saved_r = gt_boxes[current_highlight].r;
 								saved_t = gt_boxes[current_highlight].t;
 								saved_b = gt_boxes[current_highlight].b;
 								box_edit_mode = 7;
 							}
-							if (event.key.code == sf::Keyboard::Numpad9) {
+							if (event.key.code == sf::Keyboard::Numpad9 || event.key.code == sf::Keyboard::E) {
 								saved_l = gt_boxes[current_highlight].l;
 								saved_r = gt_boxes[current_highlight].r;
 								saved_t = gt_boxes[current_highlight].t;
@@ -902,7 +900,7 @@ void do_box_labeling_compact(char* image_name, char** class_list, int n_class) {
 										float y = (gt_boxes[i].t + gt_boxes[i].b) / (2 * im_h);
 										float w = (gt_boxes[i].r - gt_boxes[i].l + 1) / im_w;
 										float h = (gt_boxes[i].b - gt_boxes[i].t + 1) / im_h;
-										fprintf(file, "%d %.6f %.6f %.6f %.6f\n", gt_boxes[i].class_id, x, y, w, h);
+										fprintf(file, "%d %.16f %.16f %.16f %.16f\n", gt_boxes[i].class_id, x, y, w, h);
 										fprintf(file_diff, "%d\n", gt_boxes[i].difficult);
 									}
 								}
@@ -1049,6 +1047,7 @@ extern "C" void run_synlabel(char* image_list_name, char* class_list_name) {
 
 	int preview_box_w = 600;
 	sf::RenderWindow menu(sf::VideoMode(600 + preview_box_w, 420), "image list", sf::Style::Close);
+	menu.setFramerateLimit(60);
 	menu.setPosition(sf::Vector2i(100, 100));
 
 	sf::Texture preview_img_content;
@@ -1070,6 +1069,11 @@ extern "C" void run_synlabel(char* image_list_name, char* class_list_name) {
 	while (menu.isOpen()) {
 		Event event;
 		while (menu.pollEvent(event)) {
+			if (event.type == sf::Event::MouseWheelMoved) {
+				i = i - event.mouseWheel.delta;
+				if (i < 0) i = 0;
+				else if (i > n_image - 1) i = n_image - 1;
+			}
 			if (event.type == sf::Event::KeyPressed) {
 				if (event.key.code == sf::Keyboard::Escape) {
 					menu.close();
@@ -1135,7 +1139,7 @@ extern "C" void run_synlabel(char* image_list_name, char* class_list_name) {
 							rewind(src_file);
 
 							char* buffer = (char*)malloc(sizeof(char) * lSize);
-							size_t result = fread(buffer, 1, lSize, src_file);
+							fread(buffer, 1, lSize, src_file);
 							fwrite(buffer, 1, lSize, dst_file);
 
 							free(buffer);
@@ -1145,7 +1149,7 @@ extern "C" void run_synlabel(char* image_list_name, char* class_list_name) {
 							rewind(src_diff_file);
 
 							buffer = (char*)malloc(sizeof(char) * lSize);
-							result = fread(buffer, 1, lSize, src_diff_file);
+							fread(buffer, 1, lSize, src_diff_file);
 							fwrite(buffer, 1, lSize, dst_diff_file);
 
 							fprintf(stderr, "Copy %s to %s\n", src_label, dst_label);
